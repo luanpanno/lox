@@ -65,16 +65,16 @@ public class Scanner {
         char c = this.advance();
 
         switch (c) {
-            case '(': addToken(TokenType.LEFT_PAREN); break;
-            case ')': addToken(TokenType.RIGHT_PAREN); break;
-            case '{': addToken(TokenType.LEFT_BRACE); break;
-            case '}': addToken(TokenType.RIGHT_BRACE); break;
-            case ',': addToken(TokenType.COMMA); break;
-            case '.': addToken(TokenType.DOT); break;
-            case '-': addToken(TokenType.MINUS); break;
-            case '+': addToken(TokenType.PLUS); break;
-            case ';': addToken(TokenType.SEMICOLON); break;
-            case '*': addToken(TokenType.STAR); break;
+            case '(': this.addToken(TokenType.LEFT_PAREN); break;
+            case ')': this.addToken(TokenType.RIGHT_PAREN); break;
+            case '{': this.addToken(TokenType.LEFT_BRACE); break;
+            case '}': this.addToken(TokenType.RIGHT_BRACE); break;
+            case ',': this.addToken(TokenType.COMMA); break;
+            case '.': this.addToken(TokenType.DOT); break;
+            case '-': this.addToken(TokenType.MINUS); break;
+            case '+': this.addToken(TokenType.PLUS); break;
+            case ';': this.addToken(TokenType.SEMICOLON); break;
+            case '*': this.addToken(TokenType.STAR); break;
             case '!':
                 addToken(this.match('=') ? TokenType.BANG_EQUAL : TokenType.BANG);
                 break;
@@ -88,11 +88,13 @@ public class Scanner {
                 addToken(this.match('=') ? TokenType.GREATER_EQUAL : TokenType.GREATER);
                 break;
             case '/':
-                if (match('/')) {
+                if (this.match('/')) {
                     // A comment goes until the end of the line.
                     while (this.peek() != '\n' && !this.isAtEnd()) this.advance();
+                } else if (this.match('*')) {
+                    this.blockComment();
                 } else {
-                    addToken(TokenType.SLASH);
+                    this.addToken(TokenType.SLASH);
                 }
                 break;
             case ' ':
@@ -103,7 +105,7 @@ public class Scanner {
             case '\n':
                 line++;
                 break;
-            case '"': string(); break;
+            case '"': this.string(); break;
             default:
                 if (this.isDigit(c)) {
                     this.number();
@@ -165,6 +167,28 @@ public class Scanner {
         if (this.current + 1 >= this.source.length()) return '\0';
 
         return this.source.charAt(this.current + 1);
+    }
+
+    private void blockComment() {
+        while(!this.isBlockCommentEnd() && !this.isAtEnd()) {
+            if (peek() == '\n') this.line++;
+
+            this.advance();
+        }
+
+        if (this.isAtEnd()) {
+            Lox.error(this.line, "Unterminated block comment.");
+        }
+
+        if (!this.match('/')) {
+            this.advance();
+        }
+
+        this.advance();
+    }
+
+    private boolean isBlockCommentEnd() {
+        return this.peek() == '*' && this.peekNext() == '/';
     }
 
     private boolean isAlpha(char c) {
